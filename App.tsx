@@ -3,13 +3,16 @@ import React, { useState, useCallback } from 'react';
 import { Task, TaskStatus } from './types';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
+import EditTaskModal from './components/EditTaskModal';
 
 const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([
     { id: '1', name: 'UIデザインのワイヤーフレーム作成', startDate: '2024-07-20', dueDate: '2024-07-25', status: TaskStatus.IN_PROGRESS, remarks: 'Figmaで作成。主要な画面遷移を含めること。' },
     { id: '2', name: 'APIエンドポイントの仕様確認', startDate: '2024-07-18', dueDate: '2024-07-22', status: TaskStatus.COMPLETED },
     { id: '3', name: 'クライアントとの定例ミーティング', startDate: '2024-07-21', dueDate: '2024-07-21', status: TaskStatus.NOT_STARTED, remarks: 'アジェンダ:\n・進捗報告\n・次スプリントのタスク確認' },
-  ]);
+  ].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
+
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const handleAddTask = useCallback((taskData: Omit<Task, 'id'>) => {
     const newTask: Task = {
@@ -18,7 +21,29 @@ const App: React.FC = () => {
     };
     setTasks(prevTasks => [...prevTasks, newTask].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
   }, []);
+
+  const handleUpdateTask = useCallback((updatedTask: Task) => {
+    setTasks(prevTasks => 
+      prevTasks.map(task => (task.id === updatedTask.id ? updatedTask : task))
+               .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    );
+    setEditingTask(null);
+  }, []);
+
+  const handleDeleteTask = useCallback((taskId: string) => {
+    if (window.confirm('このタスクを本当に削除しますか？')) {
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+    }
+  }, []);
   
+  const handleStatusChange = useCallback((taskId: string, newStatus: TaskStatus) => {
+    setTasks(prevTasks =>
+        prevTasks.map(task =>
+            task.id === taskId ? { ...task, status: newStatus } : task
+        )
+    );
+  }, []);
+
   return (
     <div className="min-h-screen bg-orange-50 text-gray-800">
       <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-10 border-b border-orange-100">
@@ -34,9 +59,22 @@ const App: React.FC = () => {
         <TaskForm onAddTask={handleAddTask} />
         <div className="mt-10">
             <h2 className="text-2xl font-bold text-gray-700 mb-6 pb-2 border-b-2 border-orange-200">現在のタスク一覧</h2>
-            <TaskList tasks={tasks} />
+            <TaskList 
+              tasks={tasks} 
+              onEdit={setEditingTask} 
+              onDelete={handleDeleteTask} 
+              onStatusChange={handleStatusChange} 
+            />
         </div>
       </main>
+
+      {editingTask && (
+        <EditTaskModal
+          task={editingTask}
+          onUpdate={handleUpdateTask}
+          onClose={() => setEditingTask(null)}
+        />
+      )}
 
       <footer className="text-center py-6 text-orange-400 text-sm mt-8">
         <p>&copy; {new Date().getFullYear()} タスク管理ツール. All rights reserved.</p>

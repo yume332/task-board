@@ -1,13 +1,16 @@
 
 import React from 'react';
-import { Task } from '../types';
+import { Task, TaskStatus } from '../types';
 import TaskItem from './TaskItem';
 
 interface TaskListProps {
   tasks: Task[];
+  onEdit: (task: Task) => void;
+  onDelete: (taskId: string) => void;
+  onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
 }
 
-const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
+const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete, onStatusChange }) => {
   if (tasks.length === 0) {
     return (
       <div className="text-center py-10 px-6 bg-orange-100/50 rounded-lg border-2 border-dashed border-orange-200">
@@ -21,9 +24,15 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
   }
 
   return (
-    <ul className="space-y-4">
+    <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {tasks.map((task) => (
-        <TaskItem key={task.id} task={task} />
+        <TaskItem 
+            key={task.id} 
+            task={task} 
+            onEdit={onEdit} 
+            onDelete={onDelete} 
+            onStatusChange={onStatusChange} 
+        />
       ))}
     </ul>
   );
