@@ -1,18 +1,42 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Task, TaskStatus } from './types';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import EditTaskModal from './components/EditTaskModal';
 
-const App: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: '1', name: 'UIデザインのワイヤーフレーム作成', startDate: '2024-07-20', dueDate: '2024-07-25', status: TaskStatus.IN_PROGRESS, remarks: 'Figmaで作成。主要な画面遷移を含めること。' },
-    { id: '2', name: 'APIエンドポイントの仕様確認', startDate: '2024-07-18', dueDate: '2024-07-22', status: TaskStatus.COMPLETED },
-    { id: '3', name: 'クライアントとの定例ミーティング', startDate: '2024-07-21', dueDate: '2024-07-21', status: TaskStatus.NOT_STARTED, remarks: 'アジェンダ:\n・進捗報告\n・次スプリントのタスク確認' },
-  ].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
+const APP_STORAGE_KEY = 'tasks-app-data';
 
+const getInitialTasks = (): Task[] => {
+    try {
+        const savedTasks = window.localStorage.getItem(APP_STORAGE_KEY);
+        if (savedTasks) {
+            return JSON.parse(savedTasks);
+        }
+    } catch (error) {
+        console.error('Failed to parse tasks from localStorage', error);
+    }
+    
+    // Default tasks for first-time users
+    return [
+        { id: '1', name: 'UIデザインのワイヤーフレーム作成', startDate: '2024-07-20', dueDate: '2024-07-25', status: TaskStatus.IN_PROGRESS, remarks: 'Figmaで作成。主要な画面遷移を含めること。' },
+        { id: '2', name: 'APIエンドポイントの仕様確認', startDate: '2024-07-18', dueDate: '2024-07-22', status: TaskStatus.COMPLETED },
+        { id: '3', name: 'クライアントとの定例ミーティング', startDate: '2024-07-21', dueDate: '2024-07-21', status: TaskStatus.NOT_STARTED, remarks: 'アジェンダ:\n・進捗報告\n・次スプリントのタスク確認' },
+    ].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+};
+
+
+const App: React.FC = () => {
+  const [tasks, setTasks] = useState<Task[]>(getInitialTasks);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  useEffect(() => {
+    try {
+        window.localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(tasks));
+    } catch (error) {
+        console.error('Failed to save tasks to localStorage', error);
+    }
+  }, [tasks]);
 
   const handleAddTask = useCallback((taskData: Omit<Task, 'id'>) => {
     const newTask: Task = {
